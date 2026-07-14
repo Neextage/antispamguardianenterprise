@@ -20,3 +20,18 @@ A Dashboard passou a possuir arquitetura modular, reduzindo o tamanho dos arquiv
 ## Status
 
 Concluído.
+## Sprint 06 - Dashboard Inteligente
+
+### Concluído
+
+- Integração da Dashboard com Microsoft Outlook.
+- Carregamento automático das contas configuradas.
+- Atualização automática do card "E-mails Analisados".
+- Suporte para análise de conta individual.
+- Suporte para análise de todas as contas.
+- Centralização da atualização das estatísticas.
+- Consolidação da arquitetura da Dashboard.
+
+### Status
+
+✔ Sprint concluída com sucesso.
