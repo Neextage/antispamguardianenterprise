@@ -1,0 +1,42 @@
+# Ambiente Virtual
+.venv/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+logs/
+
+# Banco SQLite
+*.db
+*.sqlite3
+
+# Arquivos temporários
+temp/
+cache/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Build
+dist/
+build/
+
+# PyInstaller
+*.spec
+
+# Backup
+backups/
+
+# Testes
+.pytest_cache/
+
+# Cobertura
+.coverage
+htmlcov/
