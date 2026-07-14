@@ -2,15 +2,19 @@
 ===============================================================================
 Projeto.....: Antispam Guardian Enterprise
 Arquivo.....: application.py
+Descrição...: Classe principal da aplicação.
+Autor.......: Neextage
+Versão......: 0.1.0
 ===============================================================================
 """
 
 from core.app.bootstrap import Bootstrap
-from core.version import APP_VERSION
+from ui.windows.main_window import MainWindow
 from ui.windows.splash_window import SplashWindow
 
 
 class Application:
+    """Classe principal da aplicação."""
 
     def __init__(self) -> None:
 
@@ -18,15 +22,27 @@ class Application:
 
     def start(self) -> None:
 
-        print("=" * 60)
-        print(APP_VERSION.application_name)
-        print("=" * 60)
-
         self.bootstrap.initialize()
 
         splash = SplashWindow()
 
+        splash.after(
+            2600,
+            lambda: self._open_main(splash)
+        )
+
         splash.start()
+
+    def _open_main(
+        self,
+        splash: SplashWindow
+    ) -> None:
+
+        splash.destroy()
+
+        window = MainWindow()
+
+        window.mainloop()
 
     def stop(self) -> None:
 

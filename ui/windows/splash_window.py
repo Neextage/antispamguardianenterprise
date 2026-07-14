@@ -16,12 +16,15 @@ from core.utils.ui import UI
 
 
 class SplashWindow(ctk.CTk):
+    """Splash Screen da aplicação."""
 
     def __init__(self) -> None:
         super().__init__()
 
         ctk.set_appearance_mode("Light")
         ctk.set_default_color_theme("blue")
+
+        self.finished = False
 
         self.title(Constants.APPLICATION_NAME)
 
@@ -49,7 +52,9 @@ class SplashWindow(ctk.CTk):
         x = (self.winfo_screenwidth() // 2) - (width // 2)
         y = (self.winfo_screenheight() // 2) - (height // 2)
 
-        self.geometry(f"{width}x{height}+{x}+{y}")
+        self.geometry(
+            f"{width}x{height}+{x}+{y}"
+        )
 
     def _create_widgets(self) -> None:
 
@@ -84,7 +89,7 @@ class SplashWindow(ctk.CTk):
 
         ctk.CTkLabel(
             self,
-            text=f"Versão {Constants.VERSION}  •  Build {Constants.BUILD}",
+            text=f"Versão {Constants.VERSION} • Build {Constants.BUILD}",
             font=(UI.FONT, UI.FONT_SMALL),
             text_color=Colors.SUBTEXT
         ).pack(side="bottom", pady=15)
@@ -101,10 +106,13 @@ class SplashWindow(ctk.CTk):
 
         if value >= 1:
 
-            self.destroy()
+            self.finished = True
 
             return
 
         self.progress.set(value + 0.02)
 
-        self.after(25, self._animate)
+        self.after(
+            25,
+            self._animate
+        )
