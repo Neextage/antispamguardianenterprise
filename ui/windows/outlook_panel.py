@@ -11,6 +11,7 @@ Versão......: 0.1.0
 import platform
 
 from customtkinter import (
+    CTkCheckBox,
     CTkComboBox,
     CTkEntry,
     CTkFrame,
@@ -31,6 +32,12 @@ class OutlookPanel(CTkFrame):
             fg_color=Colors.CARD,
             corner_radius=10
         )
+
+        #
+        # Callback da Dashboard
+        #
+
+        self.on_account_changed = None
 
         self._create_widgets()
 
@@ -55,12 +62,29 @@ class OutlookPanel(CTkFrame):
             values=[
                 "Carregando contas..."
             ],
-            width=350
+            width=350,
+            command=self._on_account_changed
         )
 
         self.combo_accounts.pack(
             anchor="w",
             padx=20
+        )
+
+        #
+        # Checkbox
+        #
+
+        self.check_all_accounts = CTkCheckBox(
+            self,
+            text="Analisar todas as contas do Outlook",
+            command=self._on_toggle_all_accounts
+        )
+
+        self.check_all_accounts.pack(
+            anchor="w",
+            padx=20,
+            pady=(10, 0)
         )
 
         #
@@ -94,16 +118,44 @@ class OutlookPanel(CTkFrame):
         )
 
     # ==========================================================
+    # Eventos
+    # ==========================================================
+
+    def _on_account_changed(self, value: str):
+
+        if callable(self.on_account_changed):
+
+            self.on_account_changed()
+
+    def _on_toggle_all_accounts(self):
+
+        if self.check_all_accounts.get():
+
+            self.combo_accounts.configure(
+                state="disabled"
+            )
+
+        else:
+
+            self.combo_accounts.configure(
+                state="normal"
+            )
+
+        if callable(self.on_account_changed):
+
+            self.on_account_changed()
+
+    # ==========================================================
     # Métodos públicos
     # ==========================================================
 
-    def set_accounts(self, accounts: list[str]) -> None:
-        """
-        Atualiza a lista de contas do Outlook.
-        """
+    def set_accounts(self, accounts: list[str]):
 
         if not accounts:
-            accounts = ["Nenhuma conta encontrada"]
+
+            accounts = [
+                "Nenhuma conta encontrada"
+            ]
 
         self.combo_accounts.configure(
             values=accounts
@@ -113,16 +165,16 @@ class OutlookPanel(CTkFrame):
             accounts[0]
         )
 
+    def analyze_all_accounts(self) -> bool:
+
+        return bool(
+            self.check_all_accounts.get()
+        )
+
     def get_selected_account(self) -> str:
-        """
-        Retorna a conta atualmente selecionada.
-        """
 
         return self.combo_accounts.get()
 
     def get_machine_name(self) -> str:
-        """
-        Retorna o nome configurado da máquina.
-        """
 
         return self.entry_machine.get()

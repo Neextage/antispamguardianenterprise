@@ -77,7 +77,35 @@ class StatisticsCards(CTkFrame):
             self.labels[key] = value
 
     # ==========================================================
-    # Atualização dos cards
+    # Métodos individuais
+    # ==========================================================
+
+    def set_emails_analyzed(self, value: int) -> None:
+
+        self.labels["emails"].configure(
+            text=str(value)
+        )
+
+    def set_spam_detected(self, value: int) -> None:
+
+        self.labels["spam"].configure(
+            text=str(value)
+        )
+
+    def set_quarantine(self, value: int) -> None:
+
+        self.labels["quarantine"].configure(
+            text=str(value)
+        )
+
+    def set_critical_spam(self, value: int) -> None:
+
+        self.labels["critical"].configure(
+            text=str(value)
+        )
+
+    # ==========================================================
+    # Atualização completa
     # ==========================================================
 
     def update_statistics(
@@ -88,18 +116,10 @@ class StatisticsCards(CTkFrame):
         critical: int
     ) -> None:
 
-        self.labels["emails"].configure(
-            text=str(emails)
-        )
+        self.set_emails_analyzed(emails)
 
-        self.labels["spam"].configure(
-            text=str(spam)
-        )
+        self.set_spam_detected(spam)
 
-        self.labels["quarantine"].configure(
-            text=str(quarantine)
-        )
+        self.set_quarantine(quarantine)
 
-        self.labels["critical"].configure(
-            text=str(critical)
-        )
+        self.set_critical_spam(critical)

@@ -14,6 +14,7 @@ from customtkinter import (
     CTkLabel,
 )
 
+from core.outlook.outlook_manager import OutlookManager
 from core.utils.colors import Colors
 from core.utils.constants import Constants
 from core.utils.ui import UI
@@ -33,7 +34,23 @@ class DashboardPage(CTkFrame):
             fg_color="transparent"
         )
 
+        self.outlook_manager = OutlookManager()
+
         self._create_widgets()
+
+        #
+        # Callback do OutlookPanel
+        #
+
+        self.outlook_panel.on_account_changed = (
+            self._update_statistics
+        )
+
+        self._load_outlook_accounts()
+
+    # ==========================================================
+    # Interface
+    # ==========================================================
 
     def _create_widgets(self) -> None:
 
@@ -61,7 +78,7 @@ class DashboardPage(CTkFrame):
         )
 
         #
-        # Outlook
+        # Painel Outlook
         #
 
         self.outlook_panel = OutlookPanel(self)
@@ -70,8 +87,7 @@ class DashboardPage(CTkFrame):
             fill="x",
             pady=(0, 20)
         )
-
-        #
+                #
         # Status
         #
 
@@ -151,12 +167,130 @@ class DashboardPage(CTkFrame):
         )
 
         self.logs.add_log(
-            "Aguardando inicialização do serviço."
+            "Inicializando Outlook..."
         )
 
     # ==========================================================
+    # Outlook
+    # ==========================================================
+
+    def _load_outlook_accounts(self) -> None:
+        """
+        Carrega automaticamente as contas do Outlook.
+        """
+
+        if not self.outlook_manager.connect():
+
+            self.logs.add_log(
+                "Falha ao conectar ao Outlook."
+            )
+
+            self.set_status(
+                "🔴 Outlook não encontrado"
+            )
+
+            return
+
+        accounts = self.outlook_manager.get_account_names()
+
+        self.outlook_panel.set_accounts(
+            accounts
+        )
+
+        self.logs.add_log(
+            "Outlook conectado."
+        )
+
+        self.logs.add_log(
+            f"{len(accounts)} conta(s) encontrada(s)."
+        )
+
+        self.set_status(
+            "🟢 Outlook conectado"
+        )
+
+        #
+        # Atualiza os cards
+        #
+
+        self._update_statistics()
+            # ==========================================================
+    # Atualização da Dashboard
+    # ==========================================================
+
+    def _update_statistics(self) -> None:
+        """
+        Atualiza os cards da Dashboard de acordo
+        com a conta selecionada.
+        """
+
+        accounts = self.outlook_manager.get_account_names()
+
+        if not accounts:
+
+            self.statistics.set_emails_analyzed(0)
+
+            return
+
+        #
+        # Todas as contas
+        #
+
+        if self.outlook_panel.analyze_all_accounts():
+
+            total_messages = 0
+
+            for account in accounts:
+
+                total_messages += (
+                    self.outlook_manager.get_inbox_message_count(
+                        account
+                    )
+                )
+
+            self.statistics.set_emails_analyzed(
+                total_messages
+            )
+
+            self.logs.add_log(
+                f"Modo: Todas as contas ({total_messages} e-mails)."
+            )
+
+            return
+
+        #
+        # Conta selecionada
+        #
+
+        account = self.outlook_panel.get_selected_account()
+
+        total_messages = (
+            self.outlook_manager.get_inbox_message_count(
+                account
+            )
+        )
+
+        self.statistics.set_emails_analyzed(
+            total_messages
+        )
+
+        self.logs.add_log(
+            f"Conta selecionada: {account}"
+        )
+
+        self.logs.add_log(
+            f"E-mails encontrados: {total_messages}"
+        )
+            # ==========================================================
     # Métodos públicos
     # ==========================================================
+
+    def refresh(self) -> None:
+        """
+        Atualiza as estatísticas da Dashboard.
+        """
+
+        self._update_statistics()
 
     def set_status(self, text: str) -> None:
         """
