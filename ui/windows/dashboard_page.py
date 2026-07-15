@@ -4,28 +4,32 @@ Projeto.....: Antispam Guardian Enterprise
 Arquivo.....: dashboard_page.py
 Descrição...: Página principal da Dashboard.
 Autor.......: Neextage
-Versão......: 0.1.0
+Versão......: 0.2.0
 ===============================================================================
 """
+
+from __future__ import annotations
 
 from customtkinter import (
     CTkButton,
     CTkFrame,
-    CTkLabel,
+    CTkLabel
 )
 
-from core.outlook.outlook_manager import OutlookManager
 from core.utils.colors import Colors
 from core.utils.constants import Constants
 from core.utils.ui import UI
 
+from ui.windows.dashboard_controller import DashboardController
 from ui.windows.logs_panel import LogsPanel
 from ui.windows.outlook_panel import OutlookPanel
 from ui.windows.statistics_cards import StatisticsCards
 
 
 class DashboardPage(CTkFrame):
-    """Página principal da Dashboard."""
+    """
+    Página principal da Dashboard.
+    """
 
     def __init__(self, master):
 
@@ -34,19 +38,37 @@ class DashboardPage(CTkFrame):
             fg_color="transparent"
         )
 
-        self.outlook_manager = OutlookManager()
+        #
+        # Controller
+        #
+
+        self.controller = DashboardController()
+
+        #
+        # Componentes
+        #
+
+        self.outlook_panel: OutlookPanel | None = None
+
+        self.statistics: StatisticsCards | None = None
+
+        self.logs: LogsPanel | None = None
+
+        self.status_label: CTkLabel | None = None
+
+        self.start_button: CTkButton | None = None
+
+        #
+        # Interface
+        #
 
         self._create_widgets()
 
         #
-        # Callback do OutlookPanel
+        # Inicialização
         #
 
-        self.outlook_panel.on_account_changed = (
-            self._update_statistics
-        )
-
-        self._load_outlook_accounts()
+        self._initialize_dashboard()
 
     # ==========================================================
     # Interface
@@ -78,32 +100,35 @@ class DashboardPage(CTkFrame):
         )
 
         #
-        # Painel Outlook
+        # Outlook
         #
 
-        self.outlook_panel = OutlookPanel(self)
+        self.outlook_panel = OutlookPanel(
+            self
+        )
 
         self.outlook_panel.pack(
             fill="x",
             pady=(0, 20)
         )
-                #
+
+        #
         # Status
         #
 
-        status = CTkFrame(
+        status_frame = CTkFrame(
             self,
             fg_color=Colors.CARD,
             corner_radius=10
         )
 
-        status.pack(
+        status_frame.pack(
             fill="x",
             pady=(0, 20)
         )
 
         CTkLabel(
-            status,
+            status_frame,
             text="Status do Serviço",
             font=(UI.FONT, 15, "bold")
         ).pack(
@@ -113,8 +138,8 @@ class DashboardPage(CTkFrame):
         )
 
         self.status_label = CTkLabel(
-            status,
-            text="🟡 Aguardando início",
+            status_frame,
+            text="🟡 Inicializando...",
             font=(UI.FONT, 14)
         )
 
@@ -123,12 +148,13 @@ class DashboardPage(CTkFrame):
             padx=20,
             pady=(0, 15)
         )
-
-        #
+                #
         # Cards
         #
 
-        self.statistics = StatisticsCards(self)
+        self.statistics = StatisticsCards(
+            self
+        )
 
         self.statistics.pack(
             anchor="w",
@@ -143,7 +169,8 @@ class DashboardPage(CTkFrame):
             self,
             text="▶ Iniciar Análise",
             width=220,
-            height=40
+            height=40,
+            command=self._start_scan
         )
 
         self.start_button.pack(
@@ -155,46 +182,48 @@ class DashboardPage(CTkFrame):
         # Logs
         #
 
-        self.logs = LogsPanel(self)
+        self.logs = LogsPanel(
+            self
+        )
 
         self.logs.pack(
             fill="both",
             expand=True
         )
 
-        self.logs.add_log(
-            "Dashboard carregada com sucesso."
-        )
-
-        self.logs.add_log(
-            "Inicializando Outlook..."
-        )
-
     # ==========================================================
-    # Outlook
+    # Inicialização
     # ==========================================================
 
-    def _load_outlook_accounts(self) -> None:
+    def _initialize_dashboard(self) -> None:
         """
-        Carrega automaticamente as contas do Outlook.
+        Inicializa a Dashboard.
         """
 
-        if not self.outlook_manager.connect():
+        self.logs.add_log(
+            "Inicializando Dashboard..."
+        )
+
+        result = self.controller.initialize()
+
+        if not result["success"]:
+
+            self.set_status(
+                result["status"]
+            )
 
             self.logs.add_log(
                 "Falha ao conectar ao Outlook."
             )
 
-            self.set_status(
-                "🔴 Outlook não encontrado"
-            )
-
             return
 
-        accounts = self.outlook_manager.get_account_names()
-
         self.outlook_panel.set_accounts(
-            accounts
+            result["accounts"]
+        )
+
+        self.set_status(
+            result["status"]
         )
 
         self.logs.add_log(
@@ -202,20 +231,83 @@ class DashboardPage(CTkFrame):
         )
 
         self.logs.add_log(
-            f"{len(accounts)} conta(s) encontrada(s)."
+            f"{len(result['accounts'])} conta(s) encontrada(s)."
         )
 
+        #
+        # Atualiza os cards logo na abertura
+        #
+
+        self._update_statistics()
+            # ==========================================================
+    # Scanner
+    # ==========================================================
+
+    def _start_scan(self) -> None:
+        """
+        Inicia a análise dos e-mails.
+        """
+
+        account = self.outlook_panel.get_selected_account()
+
+        if not account:
+
+            self.logs.add_log(
+                "Nenhuma conta selecionada."
+            )
+
+            return
+
         self.set_status(
-            "🟢 Outlook conectado"
+            "🟡 Analisando e-mails..."
+        )
+
+        self.logs.add_log(
+            f"Iniciando análise da conta: {account}"
+        )
+
+        #
+        # Nesta primeira versão vamos analisar
+        # toda a Caixa de Entrada.
+        #
+
+        result = self.controller.start_scan(
+            account_name=account
         )
 
         #
         # Atualiza os cards
         #
 
-        self._update_statistics()
+        statistics = result["statistics"]
+
+        self.statistics.update_statistics(
+
+            emails=statistics["emails"],
+
+            spam=statistics["spam"],
+
+            quarantine=statistics["quarantine"],
+
+            critical=statistics["critical"]
+
+        )
+
+        #
+        # Atualiza os logs
+        #
+
+        for message in result["logs"]:
+
+            self.logs.add_log(
+                message
+            )
+
+        self.set_status(
+            "🟢 Análise concluída."
+        )
             # ==========================================================
-    # Atualização da Dashboard
+    # Dashboard
     # ==========================================================
 
     def _update_statistics(self) -> None:
@@ -224,79 +316,131 @@ class DashboardPage(CTkFrame):
         com a conta selecionada.
         """
 
-        accounts = self.outlook_manager.get_account_names()
+        account = self.outlook_panel.get_selected_account()
 
-        if not accounts:
+        if not account:
 
-            self.statistics.set_emails_analyzed(0)
-
-            return
-
-        #
-        # Todas as contas
-        #
-
-        if self.outlook_panel.analyze_all_accounts():
-
-            total_messages = 0
-
-            for account in accounts:
-
-                total_messages += (
-                    self.outlook_manager.get_inbox_message_count(
-                        account
-                    )
-                )
-
-            self.statistics.set_emails_analyzed(
-                total_messages
-            )
-
-            self.logs.add_log(
-                f"Modo: Todas as contas ({total_messages} e-mails)."
+            self.statistics.update_statistics(
+                emails=0,
+                spam=0,
+                quarantine=0,
+                critical=0
             )
 
             return
 
-        #
-        # Conta selecionada
-        #
+        total = self.controller.get_total_messages(
+            account
+        )
+
+        self.statistics.update_statistics(
+            emails=total,
+            spam=0,
+            quarantine=0,
+            critical=0
+        )
+
+    # ==========================================================
+    # Scanner
+    # ==========================================================
+
+    def _start_scan(self) -> None:
+        """
+        Inicia a análise dos últimos e-mails
+        da conta selecionada.
+        """
 
         account = self.outlook_panel.get_selected_account()
 
-        total_messages = (
-            self.outlook_manager.get_inbox_message_count(
-                account
-            )
-        )
+        if not account:
 
-        self.statistics.set_emails_analyzed(
-            total_messages
+            self.logs.add_log(
+                "Nenhuma conta selecionada."
+            )
+
+            return
+
+        self.set_status(
+            "🟡 Analisando os últimos 100 e-mails..."
         )
 
         self.logs.add_log(
             f"Conta selecionada: {account}"
         )
 
-        self.logs.add_log(
-            f"E-mails encontrados: {total_messages}"
+        #
+        # Nesta versão analisaremos apenas
+        # os 100 e-mails mais recentes.
+        #
+
+        result = self.controller.start_scan(
+
+            account_name=account,
+
+            limit=100
+
         )
-            # ==========================================================
-    # Métodos públicos
+
+        statistics = result["statistics"]
+
+        self.statistics.update_statistics(
+
+            emails=statistics["emails"],
+
+            spam=statistics["spam"],
+
+            quarantine=statistics["quarantine"],
+
+            critical=statistics["critical"]
+
+        )
+
+        for log in result["logs"]:
+
+            self.logs.add_log(log)
+
+        self.logs.add_log(
+            "Análise finalizada."
+        )
+
+        self.set_status(
+            "🟢 Scanner finalizado"
+        )
+
+    # ==========================================================
+    # Métodos Públicos
     # ==========================================================
 
     def refresh(self) -> None:
         """
-        Atualiza as estatísticas da Dashboard.
+        Atualiza os dados da Dashboard.
         """
 
         self._update_statistics()
 
-    def set_status(self, text: str) -> None:
+    def set_status(
+        self,
+        text: str
+    ) -> None:
         """
-        Atualiza o status do serviço.
+        Atualiza o texto do Status.
         """
 
         self.status_label.configure(
             text=text
         )
+
+    def destroy(self) -> None:
+        """
+        Finaliza a Dashboard.
+        """
+
+        try:
+
+            self.controller.close()
+
+        except Exception:
+
+            pass
+
+        super().destroy()

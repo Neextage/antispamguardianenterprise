@@ -4,7 +4,7 @@ Projeto.....: Antispam Guardian Enterprise
 Arquivo.....: spam_scanner.py
 Descrição...: Scanner principal de spam.
 Autor.......: Neextage
-Versão......: 0.1.0
+Versão......: 0.2.0
 ===============================================================================
 """
 
@@ -17,37 +17,55 @@ from core.scanner.rules_engine import RulesEngine
 
 class SpamScanner:
     """
-    Scanner principal responsável por analisar
-    um e-mail utilizando todos os detectores.
+    Scanner principal responsável pela análise
+    dos e-mails utilizando todas as regras
+    cadastradas no RulesEngine.
     """
 
     def __init__(self) -> None:
 
-        self.rules_engine = RulesEngine()
+        self._rules_engine = RulesEngine()
 
-    # ==========================================================
+    # ==================================================================
     # Scanner
-    # ==========================================================
+    # ==================================================================
 
     def scan(
         self,
         email: EmailModel
     ) -> SpamAnalysis:
         """
-        Analisa um e-mail e retorna
-        o resultado da análise.
+        Analisa um único e-mail.
         """
 
-        analysis = self.rules_engine.analyze(
-            email
-        )
+        return self._rules_engine.analyze(email)
 
-        #
-        # Futuramente
-        #
-        # analysis = self.url_detector.analyze(...)
-        # analysis = self.attachment_detector(...)
-        # analysis = self.ai_guardian(...)
-        #
+    def scan_many(
+        self,
+        emails: list[EmailModel]
+    ) -> list[SpamAnalysis]:
+        """
+        Analisa uma lista de e-mails.
+        """
 
-        return analysis
+        results: list[SpamAnalysis] = []
+
+        for email in emails:
+
+            results.append(
+                self.scan(email)
+            )
+
+        return results
+
+    # ==================================================================
+    # Informações
+    # ==================================================================
+
+    @property
+    def rules_engine(self) -> RulesEngine:
+        """
+        Retorna a instância do RulesEngine.
+        """
+
+        return self._rules_engine
