@@ -4,7 +4,7 @@ Projeto.....: Antispam Guardian Enterprise
 Arquivo.....: dashboard_page.py
 Descrição...: Página principal da Dashboard.
 Autor.......: Neextage
-Versão......: 0.2.0
+Versão......: 0.3.0
 ===============================================================================
 """
 
@@ -49,13 +49,9 @@ class DashboardPage(CTkFrame):
         #
 
         self.outlook_panel: OutlookPanel | None = None
-
         self.statistics: StatisticsCards | None = None
-
         self.logs: LogsPanel | None = None
-
         self.status_label: CTkLabel | None = None
-
         self.start_button: CTkButton | None = None
 
         #
@@ -103,9 +99,7 @@ class DashboardPage(CTkFrame):
         # Outlook
         #
 
-        self.outlook_panel = OutlookPanel(
-            self
-        )
+        self.outlook_panel = OutlookPanel(self)
 
         self.outlook_panel.pack(
             fill="x",
@@ -148,13 +142,12 @@ class DashboardPage(CTkFrame):
             padx=20,
             pady=(0, 15)
         )
-                #
+
+        #
         # Cards
         #
 
-        self.statistics = StatisticsCards(
-            self
-        )
+        self.statistics = StatisticsCards(self)
 
         self.statistics.pack(
             anchor="w",
@@ -182,16 +175,13 @@ class DashboardPage(CTkFrame):
         # Logs
         #
 
-        self.logs = LogsPanel(
-            self
-        )
+        self.logs = LogsPanel(self)
 
         self.logs.pack(
             fill="both",
             expand=True
         )
-
-    # ==========================================================
+            # ==========================================================
     # Inicialização
     # ==========================================================
 
@@ -218,13 +208,25 @@ class DashboardPage(CTkFrame):
 
             return
 
+        #
+        # Carrega as contas
+        #
+
         self.outlook_panel.set_accounts(
             result["accounts"]
         )
 
+        #
+        # Atualiza o status
+        #
+
         self.set_status(
             result["status"]
         )
+
+        #
+        # Logs
+        #
 
         self.logs.add_log(
             "Outlook conectado."
@@ -235,85 +237,19 @@ class DashboardPage(CTkFrame):
         )
 
         #
-        # Atualiza os cards logo na abertura
+        # Atualiza os cards ao iniciar
         #
 
         self._update_statistics()
-            # ==========================================================
-    # Scanner
+
     # ==========================================================
-
-    def _start_scan(self) -> None:
-        """
-        Inicia a análise dos e-mails.
-        """
-
-        account = self.outlook_panel.get_selected_account()
-
-        if not account:
-
-            self.logs.add_log(
-                "Nenhuma conta selecionada."
-            )
-
-            return
-
-        self.set_status(
-            "🟡 Analisando e-mails..."
-        )
-
-        self.logs.add_log(
-            f"Iniciando análise da conta: {account}"
-        )
-
-        #
-        # Nesta primeira versão vamos analisar
-        # toda a Caixa de Entrada.
-        #
-
-        result = self.controller.start_scan(
-            account_name=account
-        )
-
-        #
-        # Atualiza os cards
-        #
-
-        statistics = result["statistics"]
-
-        self.statistics.update_statistics(
-
-            emails=statistics["emails"],
-
-            spam=statistics["spam"],
-
-            quarantine=statistics["quarantine"],
-
-            critical=statistics["critical"]
-
-        )
-
-        #
-        # Atualiza os logs
-        #
-
-        for message in result["logs"]:
-
-            self.logs.add_log(
-                message
-            )
-
-        self.set_status(
-            "🟢 Análise concluída."
-        )
-            # ==========================================================
     # Dashboard
     # ==========================================================
 
     def _update_statistics(self) -> None:
         """
-        Atualiza os cards da Dashboard de acordo
-        com a conta selecionada.
+        Atualiza os cards conforme
+        a conta atualmente selecionada.
         """
 
         account = self.outlook_panel.get_selected_account()
@@ -321,10 +257,15 @@ class DashboardPage(CTkFrame):
         if not account:
 
             self.statistics.update_statistics(
+
                 emails=0,
+
                 spam=0,
+
                 quarantine=0,
+
                 critical=0
+
             )
 
             return
@@ -334,70 +275,146 @@ class DashboardPage(CTkFrame):
         )
 
         self.statistics.update_statistics(
-            emails=total,
-            spam=0,
-            quarantine=0,
-            critical=0
-        )
 
-    # ==========================================================
+            emails=total,
+
+            spam=0,
+
+            quarantine=0,
+
+            critical=0
+
+        )
+            # ==========================================================
     # Scanner
     # ==========================================================
 
     def _start_scan(self) -> None:
         """
-        Inicia a análise dos últimos e-mails
-        da conta selecionada.
+        Inicia a análise dos e-mails.
         """
 
-        account = self.outlook_panel.get_selected_account()
+        #
+        # Descobre quais contas serão analisadas
+        #
 
-        if not account:
+        if self.outlook_panel.analyze_all_accounts():
+
+            accounts = self.controller.get_accounts()
 
             self.logs.add_log(
-                "Nenhuma conta selecionada."
+                "Modo: analisar todas as contas."
             )
 
-            return
+        else:
+
+            account = self.outlook_panel.get_selected_account()
+
+            if not account:
+
+                self.logs.add_log(
+                    "Nenhuma conta selecionada."
+                )
+
+                return
+
+            accounts = [account]
+
+        #
+        # Atualiza o status
+        #
 
         self.set_status(
-            "🟡 Analisando os últimos 100 e-mails..."
-        )
-
-        self.logs.add_log(
-            f"Conta selecionada: {account}"
+            "🟡 Analisando e-mails..."
         )
 
         #
-        # Nesta versão analisaremos apenas
-        # os 100 e-mails mais recentes.
+        # Zera os acumuladores
         #
 
-        result = self.controller.start_scan(
+        total_emails = 0
+        total_spam = 0
+        total_quarantine = 0
+        total_critical = 0
 
-            account_name=account,
+        #
+        # Analisa cada conta
+        #
 
-            limit=100
+        for account in accounts:
 
-        )
+            self.logs.add_log("")
 
-        statistics = result["statistics"]
+            self.logs.add_log(
+                f"Conta selecionada: {account}"
+            )
+
+            result = self.controller.start_scan(
+
+                account_name=account,
+
+                limit=100
+
+            )
+
+            statistics = result["statistics"]
+
+            total_emails += statistics["emails"]
+            total_spam += statistics["spam"]
+            total_quarantine += statistics["quarantine"]
+            total_critical += statistics["critical"]
+
+            for message in result["logs"]:
+
+                self.logs.add_log(
+                    message
+                )
+
+        #
+        # Atualiza os cards apenas uma vez
+        #
 
         self.statistics.update_statistics(
 
-            emails=statistics["emails"],
+            emails=total_emails,
 
-            spam=statistics["spam"],
+            spam=total_spam,
 
-            quarantine=statistics["quarantine"],
+            quarantine=total_quarantine,
 
-            critical=statistics["critical"]
+            critical=total_critical
 
         )
 
-        for log in result["logs"]:
+        self.logs.add_log("")
 
-            self.logs.add_log(log)
+        self.logs.add_log(
+            "======================================"
+        )
+
+        self.logs.add_log(
+            "Resumo Geral"
+        )
+
+        self.logs.add_log(
+            f"E-mails analisados: {total_emails}"
+        )
+
+        self.logs.add_log(
+            f"Spam detectado: {total_spam}"
+        )
+
+        self.logs.add_log(
+            f"Quarentena: {total_quarantine}"
+        )
+
+        self.logs.add_log(
+            f"Spam crítico: {total_critical}"
+        )
+
+        self.logs.add_log(
+            "======================================"
+        )
 
         self.logs.add_log(
             "Análise finalizada."
@@ -406,8 +423,7 @@ class DashboardPage(CTkFrame):
         self.set_status(
             "🟢 Scanner finalizado"
         )
-
-    # ==========================================================
+            # ==========================================================
     # Métodos Públicos
     # ==========================================================
 
@@ -423,12 +439,34 @@ class DashboardPage(CTkFrame):
         text: str
     ) -> None:
         """
-        Atualiza o texto do Status.
+        Atualiza o texto do Status do Serviço.
         """
 
-        self.status_label.configure(
-            text=text
-        )
+        if self.status_label is not None:
+
+            self.status_label.configure(
+                text=text
+            )
+
+    def clear_logs(self) -> None:
+        """
+        Limpa o painel de logs.
+        """
+
+        if self.logs is not None:
+
+            try:
+
+                self.logs.clear()
+
+            except AttributeError:
+
+                #
+                # Caso o LogsPanel ainda não possua
+                # o método clear(), apenas ignora.
+                #
+
+                pass
 
     def destroy(self) -> None:
         """

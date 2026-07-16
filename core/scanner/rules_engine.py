@@ -4,11 +4,13 @@ Projeto.....: Antispam Guardian Enterprise
 Arquivo.....: rules_engine.py
 Descrição...: Motor de regras para pontuação de spam.
 Autor.......: Neextage
-Versão......: 0.1.0
+Versão......: 0.2.0
 ===============================================================================
 """
 
 from __future__ import annotations
+
+from core.config.scanner_config import ScannerConfig
 
 from core.models.email_model import EmailModel
 from core.models.spam_analysis import SpamAnalysis
@@ -18,77 +20,80 @@ from core.scanner.rules.subject_rule import SubjectRule
 from core.scanner.rules.body_rule import BodyRule
 from core.scanner.rules.url_rule import UrlRule
 from core.scanner.rules.attachment_rule import AttachmentRule
-from core.config.scanner_config import ScannerConfig
+
 
 class RulesEngine:
     """
-    Responsável por executar todas as regras
-    cadastradas no Scanner.
+    Executa todas as regras cadastradas
+    para análise de spam.
     """
 
-def __init__(self) -> None:
+    def __init__(self) -> None:
+        """
+        Inicializa o motor de regras.
+        """
 
-    #
-    # Configurações
-    #
+        #
+        # Configurações
+        #
 
-    self.config = ScannerConfig()
+        self.config = ScannerConfig()
 
-    #
-    # Todas as regras ficam registradas aqui.
-    #
+        #
+        # Lista de regras
+        #
 
-    self.rules = []
+        self.rules = []
 
-    #
-    # Sender
-    #
+        #
+        # Sender
+        #
 
-    if self.config.sender_rule_enabled():
+        if self.config.sender_rule_enabled():
 
-     self.rules.append(
-        SenderRule()
-  )
+            self.rules.append(
+                SenderRule()
+            )
 
-     #
-     # Subject
-     #
+        #
+        # Subject
+        #
 
-     if self.config.subject_rule_enabled():
+        if self.config.subject_rule_enabled():
 
-      self.rules.append(
-       SubjectRule()
-)
+            self.rules.append(
+                SubjectRule()
+            )
 
-     #
-     # Body
-     #
+        #
+        # Body
+        #
 
-     if self.config.body_rule_enabled():
+        if self.config.body_rule_enabled():
 
-        self.rules.append(
-        BodyRule()
-)
+            self.rules.append(
+                BodyRule()
+            )
 
-     #
-     # URL
-     #
+        #
+        # URL
+        #
 
-     if self.config.url_rule_enabled():
+        if self.config.url_rule_enabled():
 
-       self.rules.append(
-        UrlRule()
-)
+            self.rules.append(
+                UrlRule()
+            )
 
-     #
-     # Anexos
-     #
+        #
+        # Attachment
+        #
 
-     if self.config.attachment_rule_enabled():
+        if self.config.attachment_rule_enabled():
 
-         self.rules.append(
-        AttachmentRule()
-)
+            self.rules.append(
+                AttachmentRule()
+            )
 
     # ==========================================================
     # Scanner
@@ -99,13 +104,14 @@ def __init__(self) -> None:
         email: EmailModel
     ) -> SpamAnalysis:
         """
-        Executa todas as regras registradas.
+        Executa todas as regras
+        sobre um e-mail.
         """
 
         analysis = SpamAnalysis()
 
         #
-        # Executa cada regra
+        # Executa regras
         #
 
         for rule in self.rules:
@@ -116,21 +122,17 @@ def __init__(self) -> None:
             )
 
         #
-        # Resultado final
+        # Resultado
         #
 
         analysis.is_spam = (
-
-         analysis.score >=
-         self.config.get_spam_score()
-
- )
+            analysis.score >=
+            self.config.get_spam_score()
+        )
 
         analysis.is_critical = (
-
-          analysis.score >=
-         self.config.get_critical_score()
-
-         )
+            analysis.score >=
+            self.config.get_critical_score()
+        )
 
         return analysis

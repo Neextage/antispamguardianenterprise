@@ -76,3 +76,19 @@ Concluído.
 - Testes realizados em ambiente real.
 
 **Status:** ✅ Concluído
+## Sprint 12 — Sistema de Configurações
+
+### Concluído
+
+- ScannerConfig implementado.
+- Criação automática do scanner.ini.
+- Configurações de Spam e Spam Crítico.
+- Configuração de limite máximo de e-mails.
+- Configuração da Quarentena Automática.
+- Habilitação individual das regras.
+- Integração com RulesEngine.
+- Integração com DashboardController.
+- Persistência das configurações.
+- Testes realizados.
+
+**Status:** ✅ Concluído
