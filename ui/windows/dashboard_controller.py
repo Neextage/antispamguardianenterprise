@@ -17,6 +17,11 @@ from core.outlook.email_manager import EmailManager
 from core.outlook.outlook_manager import OutlookManager
 
 from core.scanner.spam_scanner import SpamScanner
+from datetime import datetime
+import platform
+
+from core.database.database_manager import DatabaseManager
+from core.utils.constants import Constants
 
 
 class DashboardController:
@@ -38,6 +43,11 @@ class DashboardController:
         #
 
         self.quarantine = QuarantineManager()
+        #
+        # Banco de Dados 
+        #
+        
+        self.database = DatabaseManager()
 
     # ==========================================================
     # Outlook
@@ -194,6 +204,44 @@ class DashboardController:
                 analyses.append(
                     analysis
                 )
+                #
+                # Salva no SQLite
+                #
+                
+                reasons = "\n".join(
+                    
+                    rule.description
+                    
+                    for rule in analysis.rules
+                    
+                )
+                self.database.insert_analysis(
+                    
+                    analysis_date=datetime.now().strftime(
+                        "%d/%m/%Y %H:%M:%S"
+                    ),
+                    computer_name=platform.node(),
+                    
+                    application_version=Constants.VERSION,
+                    
+                    outlook_account=account_name,
+                    
+                    sender_name=email.sender_name,
+                    
+                    sender_email=email.sender_email,
+                    
+                    subject=email.subject,
+                    
+                    spam_score=analysis.score,
+                    
+                    is_spam=analysis.is_spam,
+                    
+                    is_critical=analysis.is_critical,
+                    
+                    moved_to_quarantine=analysis.is_spam,
+                    
+                    reasons=reasons
+                )
 
                 if analysis.is_spam:
 
@@ -326,7 +374,9 @@ class DashboardController:
         logs.append(
             "Análise concluída com sucesso."
         )
-
+        logs.append(
+            f"Registros adicionados: {len(analyses)}"        
+        )
         logs.append(
             "======================================"
         )
@@ -368,7 +418,11 @@ class DashboardController:
         logs = self.build_logs(
             analyses
         )
-                #
+        logs.append(
+            "Resultados gravados no banco de dados SQLite."
+         )
+        
+        #
         # Logs da Quarentena
         #
 

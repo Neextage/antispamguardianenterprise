@@ -49,3 +49,16 @@ Concluído.
 - Arquitetura preparada para Quarentena e SQLite.
 
 **Status:** ✅ Concluído
+## Sprint 10 — Automatic Quarantine
+
+### Concluído
+
+- QuarantineManager implementado.
+- Criação automática da pasta "Antispam Guardian Quarantine".
+- Movimentação automática de mensagens classificadas como spam.
+- Integração com DashboardController.
+- Atualização dos Logs.
+- Atualização das estatísticas da Dashboard.
+- Testes realizados em ambiente real utilizando Microsoft Outlook.
+
+**Status:** ✅ Concluído
