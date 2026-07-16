@@ -62,3 +62,17 @@ Concluído.
 - Testes realizados em ambiente real utilizando Microsoft Outlook.
 
 **Status:** ✅ Concluído
+## Sprint 11 — SQLite Persistence
+
+### Concluído
+
+- DatabaseManager implementado.
+- Criação automática do banco SQLite.
+- Criação automática da tabela email_analysis.
+- Registro automático das análises.
+- Consultas estatísticas.
+- Histórico de análises.
+- Integração com DashboardController.
+- Testes realizados em ambiente real.
+
+**Status:** ✅ Concluído

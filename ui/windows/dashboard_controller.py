@@ -22,6 +22,7 @@ import platform
 
 from core.database.database_manager import DatabaseManager
 from core.utils.constants import Constants
+from core.config.scanner_config import ScannerConfig
 
 
 class DashboardController:
@@ -48,6 +49,11 @@ class DashboardController:
         #
         
         self.database = DatabaseManager()
+        #
+        # Configurações
+        #
+
+        self.config = ScannerConfig()
 
     # ==========================================================
     # Outlook
@@ -188,34 +194,34 @@ class DashboardController:
 
         for index in range(1, total + 1):
 
-            try:
+             try:
 
-                mail_item = items.Item(index)
+                 mail_item = items.Item(index)
 
-                email = self.convert_mail(
+                 email = self.convert_mail(
                     mail_item,
                     account_name
-                )
+                 )
 
-                analysis = self.scanner.scan(
+                 analysis = self.scanner.scan(
                     email
-                )
+                 )
 
-                analyses.append(
+                 analyses.append(
                     analysis
-                )
-                #
-                # Salva no SQLite
-                #
+                 )
+                 #
+                 # Salva no SQLite
+                 #
                 
-                reasons = "\n".join(
+                 reasons = "\n".join(
                     
                     rule.description
                     
                     for rule in analysis.rules
                     
-                )
-                self.database.insert_analysis(
+                 )
+                 self.database.insert_analysis(
                     
                     analysis_date=datetime.now().strftime(
                         "%d/%m/%Y %H:%M:%S"
@@ -241,16 +247,17 @@ class DashboardController:
                     moved_to_quarantine=analysis.is_spam,
                     
                     reasons=reasons
-                )
+                 )
 
-                if analysis.is_spam:
+                 if (
+                    analysis.is_spam
+                    and
+                    self.config.auto_quarantine_enabled()
+                 ):
 
                     moved = self.quarantine.move_to_quarantine(
-
                         mail_item,
-
                         account_name
-
                     )
 
                     if moved:
@@ -265,19 +272,29 @@ class DashboardController:
                             f"Remetente: {email.sender_email}"
                         )
 
-            except Exception:
+                 elif analysis.is_spam:
 
-                continue
+                    quarantine_logs.append(
+                        "Quarentena automática desabilitada."
+                    )
 
-        return (
+                    quarantine_logs.append(
+                        f'Spam detectado: "{email.subject}"'
+                    )
 
-            analyses,
+             except Exception:
 
-            quarantine_count,
+                      continue
 
-            quarantine_logs
+                      return (
 
-        )
+                     analyses,
+
+                     quarantine_count,
+
+                     quarantine_logs
+
+      )
     # ==========================================================
     # Estatísticas
     # ==========================================================
@@ -394,9 +411,16 @@ class DashboardController:
         """
         Executa a análise completa da Caixa
         de Entrada.
-
-        Retorna os resultados para a Dashboard.
         """
+        #
+        # Utiliza o limite configurado
+        # caso nenhum seja informado.
+        #
+
+        if limit is None:
+
+         limit = self.config.get_max_emails()
+        
 
         analyses, quarantine_count, quarantine_logs = (
             self.analyze_inbox(

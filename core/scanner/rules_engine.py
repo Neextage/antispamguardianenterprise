@@ -18,7 +18,7 @@ from core.scanner.rules.subject_rule import SubjectRule
 from core.scanner.rules.body_rule import BodyRule
 from core.scanner.rules.url_rule import UrlRule
 from core.scanner.rules.attachment_rule import AttachmentRule
-
+from core.config.scanner_config import ScannerConfig
 
 class RulesEngine:
     """
@@ -26,25 +26,69 @@ class RulesEngine:
     cadastradas no Scanner.
     """
 
-    def __init__(self) -> None:
+def __init__(self) -> None:
 
-        #
-        # Todas as regras ficam registradas aqui.
-        #
+    #
+    # Configurações
+    #
 
-        self.rules = [
+    self.config = ScannerConfig()
 
-            SenderRule(),
+    #
+    # Todas as regras ficam registradas aqui.
+    #
 
-            SubjectRule(),
+    self.rules = []
 
-            BodyRule(),
+    #
+    # Sender
+    #
 
-            UrlRule(),
+    if self.config.sender_rule_enabled():
 
-            AttachmentRule()
+     self.rules.append(
+        SenderRule()
+  )
 
-        ]
+     #
+     # Subject
+     #
+
+     if self.config.subject_rule_enabled():
+
+      self.rules.append(
+       SubjectRule()
+)
+
+     #
+     # Body
+     #
+
+     if self.config.body_rule_enabled():
+
+        self.rules.append(
+        BodyRule()
+)
+
+     #
+     # URL
+     #
+
+     if self.config.url_rule_enabled():
+
+       self.rules.append(
+        UrlRule()
+)
+
+     #
+     # Anexos
+     #
+
+     if self.config.attachment_rule_enabled():
+
+         self.rules.append(
+        AttachmentRule()
+)
 
     # ==========================================================
     # Scanner
@@ -76,11 +120,17 @@ class RulesEngine:
         #
 
         analysis.is_spam = (
-            analysis.score >= 50
-        )
+
+         analysis.score >=
+         self.config.get_spam_score()
+
+ )
 
         analysis.is_critical = (
-            analysis.score >= 80
-        )
+
+          analysis.score >=
+         self.config.get_critical_score()
+
+         )
 
         return analysis
